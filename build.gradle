@@ -1,0 +1,81 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        jcenter()
+        maven {
+            name = "forge"
+            url = "http://files.minecraftforge.net/maven"
+        }
+        maven {
+            // Add maven repo for SpecialSource
+            name = "sonatype"
+            url = "https://oss.sonatype.org/content/repositories/snapshots/"
+        }
+    }
+    dependencies {
+        classpath 'net.minecraftforge.gradle:ForgeGradle:1.2-SNAPSHOT'
+    }
+}
+
+apply plugin: 'forge'
+apply plugin: 'idea'
+apply plugin: 'java'
+
+ext.buildProps = file "build.properties"
+
+buildProps.withReader {
+    def prop = new Properties()
+    prop.load(it)
+    ext.config = new ConfigSlurper().parse prop
+}
+
+repositories {
+    maven {
+        name = "forge"
+        url = "http://files.minecraftforge.net/maven"
+    }
+    maven { // the repo from which to get NEI and stuff
+        name 'CB Repo'
+        url "http://chickenbones.net/maven"
+    }
+    maven { // The repo from which to get waila
+        name "Mobius Repo"
+        url "http://mobiusstrip.eu/maven"
+    }
+    ivy {
+        name 'FMP'
+        artifactPattern "http://files.minecraftforge.net/[module]/[module]-dev-[revision].[ext]"
+    }
+}
+
+dependencies {
+    compile 'codechicken:NotEnoughItems:${config.version.minecraft}-${config.version.nei}'
+    compile 'codechicken:CodeChickenCore:${config.version.minecraft}-${config.version.cccore}'
+    compile 'codechicken:CodeChickenLib:${config.version.minecraft}-${config.version.cclib}'
+    compile 'mcp.mobius.waila:Waila:${config.version.waila}_${config.version.minecraft}'
+    compile fileTree(dir: 'lib', include: '*.jar')
+}
+
+group = "${config.project.group}"
+archivesBaseName = "${config.project.archivesBaseName}"
+
+minecraft {
+    version = '${config.version.minecraft}-${config.version.forge}'
+
+    replaceIn 'reference/Reference.java'
+    replace '@MAJOR@', config.version.mod.major
+    replace '@MINOR@', config.version.mod.minor
+    replace '@REVIS@', config.version.mod.revis
+}
+
+processResources {
+    from 'build.properties'
+}
+
+allprojects {
+    version = "${config.version.minecraft}-${config.version.mod.major}.${config.version.mod.minor}.${config.version.mod.revis}"
+
+    jar {
+        destinationDir = file (rootProject.getRootDir().getPath() + '/output')
+    }
+}

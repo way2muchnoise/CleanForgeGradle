@@ -1,17 +1,25 @@
 buildscript {
     repositories {
+        mavenCentral()
         jcenter()
         maven {
             name = "forge"
             url = "http://files.minecraftforge.net/maven"
         }
+        maven {
+            // Add maven repo for SpecialSource
+            name = "sonatype"
+            url = "https://oss.sonatype.org/content/repositories/snapshots/"
+        }
     }
     dependencies {
-        classpath 'net.minecraftforge.gradle:ForgeGradle:2.0-SNAPSHOT'
+        classpath 'net.minecraftforge.gradle:ForgeGradle:1.2-SNAPSHOT'
     }
 }
-apply plugin: 'net.minecraftforge.gradle.forge'
+
+apply plugin: 'forge'
 apply plugin: 'idea'
+apply plugin: 'java'
 
 repositories {
     maven {
@@ -22,9 +30,13 @@ repositories {
         name 'CB Repo'
         url "http://chickenbones.net/maven"
     }
-    maven {
-        name "Waila Mobius Repo"
+    maven { // The repo from which to get waila
+        name "Mobius Repo"
         url "http://mobiusstrip.eu/maven"
+    }
+    ivy {
+        name 'FMP'
+        artifactPattern "http://files.minecraftforge.net/[module]/[module]-dev-[revision].[ext]"
     }
 }
 
@@ -41,8 +53,6 @@ archivesBaseName = "${project_archivesBaseName}"
 
 minecraft {
     version = "${version_minecraft}-${version_forge}"
-    mappings = "${version_mappings}"
-    runDir = "run"
 
     replace "@MAJOR@", version_major
     replace "@MINOR@", version_minor
@@ -69,7 +79,6 @@ version = "${version_minecraft}-${version_major}.${version_minor}.${version_revi
 jar {
     from "build/sources/main"
     destinationDir = file (rootProject.getRootDir().getPath() + '/output')
-    exclude('betterachievementsdemo/**')
 }
 
 task deobfJar(type: Jar) {
@@ -78,7 +87,7 @@ task deobfJar(type: Jar) {
     destinationDir = file (rootProject.getRootDir().getPath() + '/output')
 }
 
-task sourcesJar(type: Jar, dependsOn: 'sourceMainJava') {
+task sourceJar(type: Jar, dependsOn: 'sourceMainJava') {
     from "build/sources/java"
     from "build/resources/main/java"
     classifier "sources"
@@ -86,5 +95,5 @@ task sourcesJar(type: Jar, dependsOn: 'sourceMainJava') {
 }
 
 artifacts {
-    archives sourcesJar, deobfJar
+    archives sourceJar, deobfJar
 }

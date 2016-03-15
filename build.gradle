@@ -18,21 +18,14 @@ repositories {
         name = "forge"
         url = "http://files.minecraftforge.net/maven"
     }
-    maven { // the repo from which to get NEI and stuff
-        name 'CB Repo'
-        url "http://chickenbones.net/maven"
-    }
     maven {
-        name "Waila Mobius Repo"
-        url "http://mobiusstrip.eu/maven"
+        name = "progwml6"
+        url =  "http://dvs1.progwml6.com/files/maven"
     }
 }
 
 dependencies {
-    compile "codechicken:CodeChickenLib:${version_minecraft}-${version_cclib}:dev"
-    compile "codechicken:CodeChickenCore:${version_minecraft}-${version_cccore}:dev"
-    compile "codechicken:NotEnoughItems:${version_minecraft}-${version_nei}:dev"
-    compile "mcp.mobius.waila:Waila:${waila_version}:dev"
+    deobfCompile "mezz.jei:jei_${version_minecraft}:${version_jei}"
     compile fileTree(dir: 'lib', include: '*.jar')
 }
 
@@ -43,6 +36,8 @@ minecraft {
     version = "${version_minecraft}-${version_forge}"
     mappings = "${version_mappings}"
     runDir = "run"
+
+    useDepAts = true
 
     replace "@MAJOR@", version_major
     replace "@MINOR@", version_minor
@@ -62,14 +57,15 @@ processResources {
     }
 
     from(sourceSets.main.resources.srcDirs) { exclude '**/*.info' }
+
+    // Move access transformers to META-INF
+    rename '(.+_at.cfg)', 'META-INF/$1'
 }
 
 version = "${version_minecraft}-${version_major}.${version_minor}.${version_revis}"
 
 jar {
-    from "build/sources/main"
     destinationDir = file (rootProject.getRootDir().getPath() + '/output')
-    exclude('betterachievementsdemo/**')
 }
 
 task deobfJar(type: Jar) {
@@ -78,6 +74,22 @@ task deobfJar(type: Jar) {
     destinationDir = file (rootProject.getRootDir().getPath() + '/output')
 }
 
+task sourcesJar(type: Jar, dependsOn: 'sourceMainJava') {
+    from "build/sources/main"
+    from "build/resources/main"
+    classifier "sources"
+    destinationDir = file (rootProject.getRootDir().getPath() + '/output')
+}
+
+task apiJar(type: Jar, dependsOn: 'sourceMainJava') {
+    from "build/sources/main/java/jeresources/api"
+    classifier "api"
+    destinationDir = file (rootProject.getRootDir().getPath() + '/output')
+}
+
+artifacts {
+    archives deobfJar, sourcesJar, apiJar
+}
 task sourcesJar(type: Jar, dependsOn: 'sourceMainJava') {
     from "build/sources/java"
     from "build/resources/main/java"

@@ -7,7 +7,7 @@ buildscript {
         }
     }
     dependencies {
-        classpath 'net.minecraftforge.gradle:ForgeGradle:2.1-SNAPSHOT'
+        classpath 'net.minecraftforge.gradle:ForgeGradle:2.0-SNAPSHOT'
     }
 }
 apply plugin: 'net.minecraftforge.gradle.forge'
@@ -19,7 +19,7 @@ repositories {
         url = "http://files.minecraftforge.net/maven"
     }
     maven {
-        name = "jei"
+        name = "progwml6"
         url =  "http://dvs1.progwml6.com/files/maven"
     }
 }
@@ -30,17 +30,7 @@ dependencies {
 }
 
 group = "${project_group}"
-archivesBaseName = "${project_archivesBaseName}-" + version_minecraft
-
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
-
-version = version_major + '.' + version_minor + '.' + version_revis
-
-//adds the build number to the end of the version string if on a build server
-if (System.getenv().DRONE_BUILD_NUMBER != null) {
-    version += ".${System.getenv().DRONE_BUILD_NUMBER}"
-}
+archivesBaseName = "${project_archivesBaseName}"
 
 minecraft {
     version = "${version_minecraft}-${version_forge}"
@@ -49,7 +39,9 @@ minecraft {
 
     useDepAts = true
 
-    replace "@VERSION@", project.version
+    replace "@MAJOR@", version_major
+    replace "@MINOR@", version_minor
+    replace "@REVIS@", version_revis
 
     replaceIn "reference/Reference.java"
     replaceIn "package-info.java"
@@ -69,6 +61,8 @@ processResources {
     // Move access transformers to META-INF
     rename '(.+_at.cfg)', 'META-INF/$1'
 }
+
+version = "${version_minecraft}-${version_major}.${version_minor}.${version_revis}"
 
 jar {
     destinationDir = file (rootProject.getRootDir().getPath() + '/output')
@@ -95,4 +89,14 @@ task apiJar(type: Jar, dependsOn: 'sourceMainJava') {
 
 artifacts {
     archives deobfJar, sourcesJar, apiJar
+}
+task sourcesJar(type: Jar, dependsOn: 'sourceMainJava') {
+    from "build/sources/java"
+    from "build/resources/main/java"
+    classifier "sources"
+    destinationDir = file (rootProject.getRootDir().getPath() + '/output')
+}
+
+artifacts {
+    archives sourcesJar, deobfJar
 }

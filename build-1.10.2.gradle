@@ -110,7 +110,7 @@ curseforge {
     project {
         id = curse_project_id
         changelog = "git log -n1 --pretty=format:\"[%h](https://github.com/${repo}/commit/%H) %cn: %s\"".execute().text.trim()
-        changelogType = 'text'
+        changelogType = 'markdown'
         releaseType =  'alpha'
         mainArtifact (jar) {
             displayName = "${jar.archiveName}".replace(".jar", "")

@@ -1,0 +1,131 @@
+buildscript {
+    repositories {
+        jcenter()
+        maven {
+            name = "forge"
+            url = "http://files.minecraftforge.net/maven"
+        }
+    }
+    dependencies {
+        classpath 'net.minecraftforge.gradle:ForgeGradle:2.2-SNAPSHOT'
+    }
+}
+
+plugins {
+    id "com.matthewprenger.cursegradle" version "1.0.7"
+}
+
+apply plugin: 'net.minecraftforge.gradle.forge'
+apply plugin: 'idea'
+
+repositories {
+    maven {
+        name = "forge"
+        url = "http://files.minecraftforge.net/maven"
+    }
+    maven {
+        name = "jei"
+        url =  "http://dvs1.progwml6.com/files/maven"
+    }
+}
+
+dependencies {
+    deobfCompile "mezz.jei:jei_${version_minecraft}:${version_jei}:api"
+    runtime "mezz.jei:jei_${version_minecraft}:${version_jei}"
+    compile fileTree(dir: 'lib', include: '*.jar')
+}
+
+group = "${project_group}"
+archivesBaseName = "${project_archivesBaseName}-" + version_minecraft
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+version = version_major + '.' + version_minor + '.' + version_revis
+
+//adds the build number to the end of the version string if on a build server
+if (System.getenv().DRONE_BUILD_NUMBER != null) {
+    version += ".${System.getenv().DRONE_BUILD_NUMBER}"
+}
+
+minecraft {
+    version = "${version_minecraft}-${version_forge}"
+    mappings = "${version_mappings}"
+    runDir = "run"
+
+    useDepAts = true
+
+    replace "@VERSION@", project.version
+
+    replaceIn "reference/Reference.java"
+    replaceIn "package-info.java"
+}
+
+processResources {
+    inputs.property "version", project.version
+    inputs.property "mcversion", project.minecraft.version
+
+    from(sourceSets.main.resources.srcDirs) {
+        include '**/*.info'
+        expand 'version':"${version_major}.${version_minor}.${version_revis}", 'mcversion':version_minecraft
+    }
+
+    from(sourceSets.main.resources.srcDirs) { exclude '**/*.info' }
+
+    // Move access transformers to META-INF
+    rename '(.+_at.cfg)', 'META-INF/$1'
+}
+
+jar {
+    destinationDir = file (rootProject.getRootDir().getPath() + '/output')
+}
+
+task deobfJar(type: Jar) {
+    from sourceSets.main.output
+    classifier = 'deobf'
+    destinationDir = file (rootProject.getRootDir().getPath() + '/output')
+}
+
+task sourcesJar(type: Jar, dependsOn: 'sourceMainJava') {
+    from "build/sources/main"
+    from "build/resources/main"
+    classifier "sources"
+    destinationDir = file (rootProject.getRootDir().getPath() + '/output')
+}
+
+task apiJar(type: Jar, dependsOn: 'sourceMainJava') {
+    from sourceSets.main.allSource
+    from sourceSets.main.output
+    include "${project_group}/api/**/*"
+    classifier 'api'
+    destinationDir = file (rootProject.getRootDir().getPath() + '/output')
+}
+
+artifacts {
+    archives deobfJar, sourcesJar, apiJar
+}
+
+curseforge {
+    apiKey = System.getenv().CURSE_KEY == null ? '0' : System.getenv().CURSE_KEY
+    project {
+        id = curse_project_id
+        changelog = "git log -n1 --pretty=format:\"[%h](https://github.com/${repo}/commit/%H) %cn: %s\"".execute().text.trim()
+        changelogType = 'text'
+        releaseType =  'alpha'
+        mainArtifact (jar) {
+            displayName = "${jar.archiveName}".replace(".jar", "")
+            relations {
+                requiredLibrary 'just-enough-items-jei'
+            }
+        }
+        addArtifact (deobfJar) {
+            displayName = "${deobfJar.archiveName}".replace(".jar", "")
+        }
+        addArtifact (sourcesJar) {
+            displayName = "${sourcesJar.archiveName}".replace(".jar", "")
+        }
+        addArtifact (apiJar) {
+            displayName = "${apiJar.archiveName}".replace(".jar", "")
+        }
+    }
+}
